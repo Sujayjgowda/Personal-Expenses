@@ -52,9 +52,34 @@ app.use('/api/reports', authMiddleware, reportsRoutes);
 
 // Health check (public)
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', version: '2.0-auth', timestamp: new Date().toISOString() });
+});
+
+// Debug: list registered routes
+app.get('/api/debug/routes', (req, res) => {
+  const routes = [];
+  app._router.stack.forEach((middleware) => {
+    if (middleware.route) {
+      routes.push({ method: Object.keys(middleware.route.methods).join(','), path: middleware.route.path });
+    } else if (middleware.name === 'router') {
+      middleware.handle.stack.forEach((handler) => {
+        if (handler.route) {
+          routes.push({
+            method: Object.keys(handler.route.methods).join(','),
+            path: middleware.regexp.toString() + handler.route.path
+          });
+        }
+      });
+    }
+  });
+  res.json({ routes, totalRoutes: routes.length });
+});
+
+// Catch-all 404 for debugging
+app.use((req, res) => {
+  res.status(404).json({ error: `Route not found: ${req.method} ${req.path}`, version: '2.0-auth' });
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server v2.0-auth running on http://localhost:${PORT}`);
 });
