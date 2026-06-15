@@ -39,6 +39,7 @@ export default function Expenses() {
   // Budget & Category Manage states
   const [budgetsOpen, setBudgetsOpen] = useState(false);
   const [editingBudgets, setEditingBudgets] = useState({});
+  const [originalBudgets, setOriginalBudgets] = useState({});
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryIcon, setNewCategoryIcon] = useState('🛒');
 
@@ -143,11 +144,15 @@ export default function Expenses() {
   // Manage Budgets Modal Open
   const openManageBudgets = () => {
     const initialEditing = {};
+    const initialOriginal = {};
     categories.forEach((cat) => {
       const b = budgets.find((b) => b.category_id === cat.id);
-      initialEditing[cat.id] = b ? String(parseFloat(b.amount)) : '';
+      const val = b ? String(parseFloat(b.amount)) : '';
+      initialEditing[cat.id] = val;
+      initialOriginal[cat.id] = val;
     });
     setEditingBudgets(initialEditing);
+    setOriginalBudgets(initialOriginal);
     setNewCategoryName('');
     setNewCategoryIcon('🛒');
     setConfirmDeleteCatId(null);
@@ -157,17 +162,27 @@ export default function Expenses() {
   const handleSaveBudgets = async (e) => {
     e.preventDefault();
     try {
-      await Promise.all(
-        categories.map((cat) => {
-          const val = editingBudgets[cat.id];
-          const amount = val ? parseFloat(val) : 0;
-          return setExpenseBudget({
-            category_id: cat.id,
-            amount,
-            month: selectedMonth
-          });
-        })
-      );
+      const promises = [];
+      categories.forEach((cat) => {
+        const originalVal = originalBudgets[cat.id] || '';
+        const currentVal = editingBudgets[cat.id] || '';
+
+        // Only save if the value was modified
+        if (currentVal !== originalVal) {
+          const amount = currentVal ? parseFloat(currentVal) : 0;
+          promises.push(
+            setExpenseBudget({
+              category_id: cat.id,
+              amount,
+              month: selectedMonth
+            })
+          );
+        }
+      });
+
+      if (promises.length > 0) {
+        await Promise.all(promises);
+      }
       setBudgetsOpen(false);
       triggerRefresh();
     } catch (err) {
