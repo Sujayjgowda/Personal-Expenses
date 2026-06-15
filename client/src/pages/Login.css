@@ -1,29 +1,155 @@
+/* ========== LOGIN CONTAINER ========== */
 .login-container {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.1) 0%, rgba(248, 250, 252, 0) 50%),
-              radial-gradient(circle at bottom left, rgba(124, 58, 237, 0.1) 0%, rgba(248, 250, 252, 0) 50%),
-              #f8fafc;
+  background: radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 20%, rgba(124, 58, 237, 0.06) 0%, transparent 50%),
+              radial-gradient(ellipse at 50% 100%, rgba(16, 185, 129, 0.04) 0%, transparent 50%),
+              var(--bg-primary);
   padding: var(--space-md);
   font-family: 'Inter', sans-serif;
+  overflow: hidden;
+  transition: background 0.4s ease;
 }
 
+/* ========== FLOATING PARTICLES ========== */
+.login-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.08;
+  animation: float-particle linear infinite;
+}
+
+.particle-1 {
+  width: 300px;
+  height: 300px;
+  background: var(--accent-primary);
+  top: -10%;
+  left: -5%;
+  animation-duration: 20s;
+}
+
+.particle-2 {
+  width: 200px;
+  height: 200px;
+  background: var(--accent-purple);
+  top: 60%;
+  right: -5%;
+  animation-duration: 25s;
+  animation-delay: -5s;
+}
+
+.particle-3 {
+  width: 150px;
+  height: 150px;
+  background: var(--accent-teal);
+  bottom: -5%;
+  left: 30%;
+  animation-duration: 18s;
+  animation-delay: -10s;
+}
+
+.particle-4 {
+  width: 100px;
+  height: 100px;
+  background: var(--accent-pink);
+  top: 20%;
+  right: 25%;
+  animation-duration: 22s;
+  animation-delay: -3s;
+}
+
+.particle-5 {
+  width: 180px;
+  height: 180px;
+  background: var(--accent-amber);
+  bottom: 20%;
+  left: 10%;
+  animation-duration: 28s;
+  animation-delay: -8s;
+}
+
+@keyframes float-particle {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(30px, -40px) scale(1.1); }
+  50% { transform: translate(-20px, 20px) scale(0.95); }
+  75% { transform: translate(15px, 35px) scale(1.05); }
+}
+
+/* ========== THEME TOGGLE ========== */
+.login-theme-toggle {
+  position: absolute;
+  top: var(--space-lg);
+  right: var(--space-lg);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.login-theme-toggle:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+}
+
+.theme-toggle-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.theme-toggle-label {
+  letter-spacing: 0.04em;
+}
+
+/* ========== LOGIN CARD ========== */
 .login-card {
   position: relative;
-  width: 768px;
+  width: 800px;
   max-width: 100%;
-  height: 500px;
+  height: 520px;
   background: var(--bg-secondary);
   border-radius: var(--radius-xl);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.08), 
+              0 8px 20px rgba(0, 0, 0, 0.04),
               0 1px 3px rgba(0, 0, 0, 0.02);
   overflow: hidden;
   display: flex;
+  z-index: 10;
+  transition: box-shadow 0.4s ease;
 }
 
-/* Forms Container */
+[data-theme="dark"] .login-card {
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4), 
+              0 8px 20px rgba(0, 0, 0, 0.3),
+              0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* ========== FORMS CONTAINER ========== */
 .forms-container {
   position: absolute;
   top: 0;
@@ -86,6 +212,7 @@
   transform: translateY(-2px);
 }
 
+/* ========== AUTH ERROR ========== */
 .auth-error {
   width: 100%;
   background: var(--accent-red-glow);
@@ -98,6 +225,7 @@
   border: 1px solid rgba(220, 38, 38, 0.2);
 }
 
+/* ========== AUTH INPUT ========== */
 .auth-input {
   width: 100%;
   background-color: var(--bg-primary);
@@ -131,6 +259,7 @@
   text-decoration: underline;
 }
 
+/* ========== AUTH BUTTON ========== */
 .btn-auth {
   border-radius: var(--radius-full);
   border: none;
@@ -142,7 +271,7 @@
   padding: 12px 40px;
   cursor: pointer;
   transition: transform 80ms ease-in, box-shadow var(--transition-fast);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.25);
   margin-top: var(--space-xs);
 }
 
@@ -151,13 +280,15 @@
 }
 
 .btn-auth:hover {
-  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
+  box-shadow: 0 6px 24px rgba(79, 70, 229, 0.4);
+  transform: translateY(-1px);
 }
 
 .btn-auth:disabled {
   opacity: 0.7;
   cursor: not-allowed;
   box-shadow: none;
+  transform: none;
 }
 
 .btn-auth-toggle-mobile {
@@ -171,7 +302,7 @@
   cursor: pointer;
 }
 
-/* Form Visibility / Sliding Logic */
+/* ========== FORM VISIBILITY / SLIDING ========== */
 .form-signup {
   opacity: 0;
   z-index: 1;
@@ -192,7 +323,7 @@
   visibility: visible;
 }
 
-/* Sliding Overlay Container */
+/* ========== OVERLAY CONTAINER ========== */
 .overlay-container {
   position: absolute;
   top: 0;
@@ -215,6 +346,16 @@
   width: 200%;
   transform: translateX(0);
   transition: transform 0.6s ease-in-out;
+}
+
+/* Shimmer overlay for depth */
+.overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 30% 0%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
+              radial-gradient(ellipse at 70% 100%, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+  pointer-events: none;
 }
 
 .overlay-panel {
@@ -241,16 +382,53 @@
   transform: translateX(0);
 }
 
+/* ========== FINANCE VAULT BRANDING ========== */
+.overlay-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--space-lg);
+}
+
+.overlay-brand-icon {
+  font-size: 2.5rem;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+  animation: brand-float 3s ease-in-out infinite;
+}
+
+@keyframes brand-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.overlay-brand-name {
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25),
+               0 4px 24px rgba(0, 0, 0, 0.15),
+               0 0 40px rgba(255, 255, 255, 0.1);
+  line-height: 1.1;
+  background: linear-gradient(180deg, #ffffff 30%, rgba(255, 255, 255, 0.8) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.2));
+}
+
 .overlay-title {
   font-weight: 800;
-  font-size: 2rem;
+  font-size: 1.5rem;
   margin-bottom: var(--space-sm);
   color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .overlay-description {
-  font-size: 0.9rem;
-  line-height: 1.5;
+  font-size: 0.88rem;
+  line-height: 1.6;
   margin-bottom: var(--space-xl);
   color: rgba(255, 255, 255, 0.9);
   max-width: 280px;
@@ -267,19 +445,21 @@
   border-radius: var(--radius-full);
   cursor: pointer;
   transition: all var(--transition-fast);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 }
 
 .btn-overlay-toggle:hover {
   background-color: #ffffff;
-  color: var(--accent-primary);
+  color: #6366f1;
   transform: scale(1.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .btn-overlay-toggle:active {
   transform: scale(0.95);
 }
 
-/* Animation triggers when .signup-active class is added */
+/* ========== SIGNUP-ACTIVE ANIMATIONS ========== */
 .login-card.signup-active .forms-container {
   transform: translateX(100%);
 }
@@ -319,7 +499,7 @@
 /* ========== RESPONSIVENESS ========== */
 @media (max-width: 768px) {
   .login-card {
-    width: 400px;
+    width: 420px;
     height: auto;
     min-height: 480px;
     flex-direction: column;
@@ -357,5 +537,31 @@
 
   .btn-auth-toggle-mobile {
     display: block;
+  }
+
+  /* Mobile branding */
+  .form-title::before {
+    content: '💰';
+    display: block;
+    font-size: 2rem;
+    margin-bottom: var(--space-xs);
+  }
+
+  .login-theme-toggle {
+    top: var(--space-md);
+    right: var(--space-md);
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    width: 100%;
+    border-radius: var(--radius-lg);
+  }
+
+  .form {
+    padding: var(--space-lg) var(--space-md);
   }
 }

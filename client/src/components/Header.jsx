@@ -7,7 +7,7 @@ const MONTH_NAMES = [
 ];
 
 export default function Header({ dashboardData }) {
-  const { selectedMonth, goToPrevMonth, goToNextMonth, setSelectedMonth, user, logout } = useApp();
+  const { selectedMonth, goToPrevMonth, goToNextMonth, setSelectedMonth, user, logout, isDarkTheme, toggleTheme } = useApp();
   const [year, month] = selectedMonth.split('-').map(Number);
   const monthName = MONTH_NAMES[month - 1];
 
@@ -43,6 +43,14 @@ export default function Header({ dashboardData }) {
 
           {user && (
             <div className="header-profile" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', paddingLeft: 'var(--space-md)', borderLeft: '1px solid var(--glass-border)' }}>
+              <button
+                className="btn btn-sm btn-secondary"
+                onClick={toggleTheme}
+                title={isDarkTheme ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                style={{ height: '32px', display: 'flex', alignItems: 'center', padding: '0 10px', fontSize: '1rem', borderRadius: 'var(--radius-sm)', minWidth: '36px' }}
+              >
+                {isDarkTheme ? '☀️' : '🌙'}
+              </button>
               <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }} title={user.email}>
                 👤 {user.username}
               </span>

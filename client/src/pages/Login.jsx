@@ -4,7 +4,7 @@ import { loginUser, registerUser } from '../services/api';
 import './Login.css';
 
 export default function Login() {
-  const { login, register } = useApp();
+  const { login, register, isDarkTheme, toggleTheme } = useApp();
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -72,6 +72,26 @@ export default function Login() {
 
   return (
     <div className="login-container">
+      {/* Theme Toggle Button */}
+      <button
+        className="login-theme-toggle"
+        onClick={toggleTheme}
+        aria-label={isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode'}
+        title={isDarkTheme ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+      >
+        <span className="theme-toggle-icon">{isDarkTheme ? '☀️' : '🌙'}</span>
+        <span className="theme-toggle-label">{isDarkTheme ? 'Light' : 'Dark'}</span>
+      </button>
+
+      {/* Floating particles */}
+      <div className="login-particles">
+        <div className="particle particle-1" />
+        <div className="particle particle-2" />
+        <div className="particle particle-3" />
+        <div className="particle particle-4" />
+        <div className="particle particle-5" />
+      </div>
+
       <div className={`login-card ${isSignUp ? 'signup-active' : ''}`}>
         
         {/* Forms Container */}
@@ -190,6 +210,10 @@ export default function Login() {
             
             {/* Left Overlay Panel (Visible when Sign Up is active, has SIGN IN button) */}
             <div className="overlay-panel overlay-left">
+              <div className="overlay-brand">
+                <span className="overlay-brand-icon">💰</span>
+                <h1 className="overlay-brand-name">Finance Vault</h1>
+              </div>
               <h2 className="overlay-title">Welcome Back!</h2>
               <p className="overlay-description">
                 Sign in to track your most recent expenses and savings in your secure vault.
@@ -201,6 +225,10 @@ export default function Login() {
 
             {/* Right Overlay Panel (Visible when Sign In is active, has SIGN UP button) */}
             <div className="overlay-panel overlay-right">
+              <div className="overlay-brand">
+                <span className="overlay-brand-icon">💰</span>
+                <h1 className="overlay-brand-name">Finance Vault</h1>
+              </div>
               <h2 className="overlay-title">Hey There!</h2>
               <p className="overlay-description">
                 Start your journey here and begin securing your personal financial data right away.
