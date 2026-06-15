@@ -9,7 +9,8 @@ import {
   getExpenseBudgets,
   setExpenseBudget,
   addExpenseCategory,
-  deleteExpenseCategory
+  deleteExpenseCategory,
+  reorderExpenseCategories
 } from '../services/api';
 import Modal from '../components/Modal';
 import './PageCommon.css';
@@ -17,7 +18,7 @@ import './PageCommon.css';
 const formatCurrency = (val) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val || 0);
 
-const EMOJIS = ['🍔', '🚗', '⚽', '🎮', '🧹', '🏠', '🏦', '🏡', '💡', '🏥', '📚', '🎁', '💅', '💸', '📈', '🛒', '🍽️', '⛽', '🏥', '📦'];
+const EMOJIS = ['🍔', '🚗', '⚽', '🎮', '🧹', '🏠', '🏦', '🏡', '💡', '🏥', '📚', '🎁', '💅', '💸', '📈', '🛒', '🍽️', '⛽', '🎓', '📦'];
 
 export default function Expenses() {
   const { selectedMonth, refreshKey, triggerRefresh } = useApp();
@@ -68,8 +69,9 @@ export default function Expenses() {
     const catItems = items.filter((i) => i.category_id === cat.id);
     const budgetObj = budgets.find((b) => b.category_id === cat.id);
     const totalBudgeted = budgetObj ? parseFloat(budgetObj.amount) : 0;
+    const isCarriedForward = budgetObj ? budgetObj.is_carried_forward : false;
     const totalActual = catItems.reduce((s, i) => s + parseFloat(i.actual || 0), 0);
-    return { ...cat, items: catItems, totalBudgeted, totalActual };
+    return { ...cat, items: catItems, totalBudgeted, totalActual, isCarriedForward };
   });
 
   // Check for uncategorized expenses (e.g. if category was deleted)
@@ -209,6 +211,23 @@ export default function Expenses() {
     }
   };
 
+  const handleMoveCategory = async (index, direction) => {
+    const newList = [...categories];
+    const swapIndex = index + direction;
+    if (swapIndex < 0 || swapIndex >= newList.length) return;
+    [newList[index], newList[swapIndex]] = [newList[swapIndex], newList[index]];
+    setCategories(newList);
+    try {
+      await reorderExpenseCategories(newList.map((c) => c.id));
+      triggerRefresh();
+    } catch (err) {
+      console.error('Reorder failed:', err);
+      // revert on failure
+      const catsData = await getExpenseCategories();
+      setCategories(catsData);
+    }
+  };
+
   if (loading) return <div className="loading-spinner" />;
 
   return (
@@ -244,7 +263,12 @@ export default function Expenses() {
               </div>
 
               <div className="cat-amounts">
-                <span>Budget: {formatCurrency(cat.totalBudgeted)}</span>
+                <span>
+                  Budget: {formatCurrency(cat.totalBudgeted)}
+                  {cat.isCarriedForward && cat.totalBudgeted > 0 && (
+                    <span style={{ fontSize: '0.65rem', color: 'var(--accent-amber)', marginLeft: '4px', fontWeight: 500 }} title="Carried forward from previous month">↩ prev</span>
+                  )}
+                </span>
                 <span className="actual" style={{ color: isOver ? 'var(--accent-red)' : 'var(--accent-green)' }}>
                   Actual: {formatCurrency(cat.totalActual)}
                 </span>
@@ -326,12 +350,23 @@ export default function Expenses() {
               Category Budgets ({selectedMonth})
             </h4>
             <form onSubmit={handleSaveBudgets}>
-              <div style={{ maxHeight: '240px', overflowY: 'auto', marginBottom: 'var(--space-md)', paddingRight: '4px', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-md)', padding: 'var(--space-sm)' }}>
-                {categories.map((cat) => (
-                  <div key={cat.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-md)', padding: 'var(--space-xs) 0', borderBottom: '1px solid var(--glass-border)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', flex: 1 }}>
+              <div style={{ maxHeight: '320px', overflowY: 'auto', marginBottom: 'var(--space-md)', paddingRight: '4px', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-md)', padding: 'var(--space-sm)' }}>
+                {categories.map((cat, idx) => (
+                  <div key={cat.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-sm)', padding: 'var(--space-xs) 0', borderBottom: '1px solid var(--glass-border)' }}>
+                    {/* Reorder arrows */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                      <button type="button" className="btn-reorder" disabled={idx === 0}
+                        onClick={() => handleMoveCategory(idx, -1)}
+                        style={{ opacity: idx === 0 ? 0.25 : 1, cursor: idx === 0 ? 'default' : 'pointer', background: 'none', border: 'none', padding: '1px 4px', fontSize: '0.7rem', lineHeight: 1, color: 'var(--text-secondary)' }}
+                        title="Move up">▲</button>
+                      <button type="button" className="btn-reorder" disabled={idx === categories.length - 1}
+                        onClick={() => handleMoveCategory(idx, 1)}
+                        style={{ opacity: idx === categories.length - 1 ? 0.25 : 1, cursor: idx === categories.length - 1 ? 'default' : 'pointer', background: 'none', border: 'none', padding: '1px 4px', fontSize: '0.7rem', lineHeight: 1, color: 'var(--text-secondary)' }}
+                        title="Move down">▼</button>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', flex: 1, minWidth: 0 }}>
                       <span style={{ fontSize: '1.2rem' }}>{cat.icon}</span>
-                      <span style={{ fontWeight: 500, fontSize: '0.85rem' }}>{cat.name}</span>
+                      <span style={{ fontWeight: 500, fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{cat.name}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
                       <input className="form-input" type="number" placeholder="Budget ₹" style={{ width: '100px', padding: '0.375rem 0.5rem', fontSize: '0.85rem' }}

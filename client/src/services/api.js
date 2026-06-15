@@ -28,6 +28,7 @@ export const getExpenseBudgets = (month) => request(`/expenses/budgets?month=${m
 export const setExpenseBudget = (data) => request('/expenses/budgets', { method: 'POST', body: JSON.stringify(data) });
 export const addExpenseCategory = (data) => request('/expenses/categories', { method: 'POST', body: JSON.stringify(data) });
 export const deleteExpenseCategory = (id) => request(`/expenses/categories/${id}`, { method: 'DELETE' });
+export const reorderExpenseCategories = (orderedIds) => request('/expenses/categories/reorder', { method: 'PUT', body: JSON.stringify({ orderedIds }) });
 
 // Savings
 export const getSavings = (month) => request(`/savings?month=${month}`);

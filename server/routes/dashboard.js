@@ -22,19 +22,33 @@ router.get('/', async (req, res) => {
       [monthDate]
     );
 
-    // Total Budgeted (from category budgets)
+    // Total Budgeted (carry forward from previous months if not set)
     const budgetResult = await pool.query(
-      'SELECT COALESCE(SUM(amount), 0) as total_budgeted FROM category_budgets WHERE month = $1',
+      `SELECT COALESCE(SUM(carried.amount), 0) as total_budgeted
+       FROM (
+         SELECT DISTINCT ON (ec.id) COALESCE(cb.amount, 0) as amount
+         FROM expense_categories ec
+         LEFT JOIN category_budgets cb ON cb.category_id = ec.id AND cb.month <= $1
+         ORDER BY ec.id, cb.month DESC NULLS LAST
+       ) carried
+       WHERE carried.amount > 0`,
       [monthDate]
     );
 
     // Expense breakdown by category (joined with category budgets)
     const categoryResult = await pool.query(
-      `SELECT ec.name, ec.icon, COALESCE(SUM(e.actual), 0) as total, COALESCE(cb.amount, 0) as budgeted
+      `SELECT ec.name, ec.icon,
+              COALESCE(SUM(e.actual), 0) as total,
+              COALESCE(carried_budget.amount, 0) as budgeted
        FROM expense_categories ec
        LEFT JOIN expenses e ON ec.id = e.category_id AND e.month = $1 AND e.is_archived = FALSE
-       LEFT JOIN category_budgets cb ON ec.id = cb.category_id AND cb.month = $1
-       GROUP BY ec.id, ec.name, ec.icon, cb.amount
+       LEFT JOIN (
+         SELECT DISTINCT ON (category_id) category_id, amount
+         FROM category_budgets
+         WHERE month <= $1
+         ORDER BY category_id, month DESC
+       ) carried_budget ON ec.id = carried_budget.category_id
+       GROUP BY ec.id, ec.name, ec.icon, carried_budget.amount
        ORDER BY total DESC`,
       [monthDate]
     );

@@ -61,18 +61,28 @@ router.get('/category-breakdown', async (req, res) => {
     const result = await pool.query(
       `SELECT ec.name, ec.icon,
               COALESCE(SUM(e.actual), 0) as total_actual,
-              COALESCE(cb.total_budgeted, 0) as total_budgeted
+              COALESCE(carried_sum.total_budgeted, 0) as total_budgeted
        FROM expense_categories ec
        LEFT JOIN expenses e ON ec.id = e.category_id
          AND e.month >= $1 AND e.month <= $2
          AND e.is_archived = FALSE
        LEFT JOIN (
-         SELECT category_id, SUM(amount) as total_budgeted
-         FROM category_budgets
-         WHERE month >= $1 AND month <= $2
+         SELECT category_id, SUM(budget_amount) as total_budgeted
+         FROM (
+           SELECT DISTINCT ON (ec2.id, m.month)
+             ec2.id as category_id,
+             COALESCE(cb.amount, 0) as budget_amount
+           FROM expense_categories ec2
+           CROSS JOIN (
+             SELECT generate_series($1::date, $2::date, '1 month'::interval)::date as month
+           ) m
+           LEFT JOIN category_budgets cb ON cb.category_id = ec2.id AND cb.month <= m.month
+           ORDER BY ec2.id, m.month, cb.month DESC NULLS LAST
+         ) per_month
+         WHERE budget_amount > 0
          GROUP BY category_id
-       ) cb ON ec.id = cb.category_id
-       GROUP BY ec.id, ec.name, ec.icon, cb.total_budgeted
+       ) carried_sum ON ec.id = carried_sum.category_id
+       GROUP BY ec.id, ec.name, ec.icon, carried_sum.total_budgeted
        ORDER BY total_actual DESC`,
       [fromDate, toDate]
     );

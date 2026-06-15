@@ -2,10 +2,12 @@
 -- All tables use soft delete (is_archived) — data is NEVER physically deleted
 
 CREATE TABLE IF NOT EXISTS expense_categories (
-  id    SERIAL PRIMARY KEY,
-  name  VARCHAR(50) UNIQUE NOT NULL,
-  icon  VARCHAR(10)
+  id         SERIAL PRIMARY KEY,
+  name       VARCHAR(50) UNIQUE NOT NULL,
+  icon       VARCHAR(10),
+  sort_order INT DEFAULT 0
 );
+
 
 CREATE TABLE IF NOT EXISTS income (
   id            SERIAL PRIMARY KEY,
@@ -97,4 +99,16 @@ BEGIN
 END $$;
 
 ALTER TABLE expenses ADD CONSTRAINT expenses_category_id_fkey FOREIGN KEY (category_id) REFERENCES expense_categories(id) ON DELETE SET NULL;
+
+-- Safely add sort_order column to existing expense_categories table
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'expense_categories' AND column_name = 'sort_order'
+  ) THEN
+    ALTER TABLE expense_categories ADD COLUMN sort_order INT DEFAULT 0;
+    UPDATE expense_categories SET sort_order = id;
+  END IF;
+END $$;
 

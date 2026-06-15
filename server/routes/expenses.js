@@ -5,7 +5,7 @@ const pool = require('../db/pool');
 // GET all expense categories
 router.get('/categories', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM expense_categories ORDER BY id');
+    const result = await pool.query('SELECT * FROM expense_categories ORDER BY sort_order ASC, id ASC');
     res.json(result.rows);
   } catch (err) {
     console.error('GET /expenses/categories error:', err);
@@ -136,17 +136,66 @@ router.delete('/categories/:id', async (req, res) => {
   }
 });
 
-// GET all category budgets for a month
+// PUT reorder categories
+router.put('/categories/reorder', async (req, res) => {
+  try {
+    const { orderedIds } = req.body;
+    if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+      return res.status(400).json({ error: 'orderedIds array is required' });
+    }
+    // Use a transaction for atomicity
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      for (let i = 0; i < orderedIds.length; i++) {
+        await client.query(
+          'UPDATE expense_categories SET sort_order = $1 WHERE id = $2',
+          [i + 1, orderedIds[i]]
+        );
+      }
+      await client.query('COMMIT');
+    } catch (txErr) {
+      await client.query('ROLLBACK');
+      throw txErr;
+    } finally {
+      client.release();
+    }
+    const result = await pool.query('SELECT * FROM expense_categories ORDER BY sort_order ASC, id ASC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('PUT /expenses/categories/reorder error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET all category budgets for a month (carry forward from previous months)
 router.get('/budgets', async (req, res) => {
   try {
     const { month } = req.query;
     if (!month) return res.status(400).json({ error: 'month query param required (YYYY-MM)' });
     const monthDate = `${month}-01`;
+
+    // For each category, get the budget for this month,
+    // or fall back to the most recent previous month's budget.
     const result = await pool.query(
-      'SELECT * FROM category_budgets WHERE month = $1',
+      `SELECT DISTINCT ON (ec.id)
+         cb.id,
+         ec.id as category_id,
+         COALESCE(cb.amount, 0) as amount,
+         COALESCE(cb.month, $1::date) as month,
+         cb.month IS NOT NULL AND cb.month < $1::date as is_carried_forward
+       FROM expense_categories ec
+       LEFT JOIN category_budgets cb ON cb.category_id = ec.id AND cb.month <= $1
+       ORDER BY ec.id, cb.month DESC NULLS LAST`,
       [monthDate]
     );
-    res.json(result.rows);
+    // Filter out rows where no budget was ever set (cb.id is null)
+    const rows = result.rows.map(r => ({
+      ...r,
+      amount: r.id ? parseFloat(r.amount) : 0,
+      is_carried_forward: r.is_carried_forward || false
+    }));
+    res.json(rows);
   } catch (err) {
     console.error('GET /expenses/budgets error:', err);
     res.status(500).json({ error: err.message });
