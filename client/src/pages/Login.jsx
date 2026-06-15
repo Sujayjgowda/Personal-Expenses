@@ -4,7 +4,7 @@ import { loginUser, registerUser } from '../services/api';
 import './Login.css';
 
 export default function Login() {
-  const { login, register, isDarkTheme, toggleTheme } = useApp();
+  const { login, register } = useApp();
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -72,16 +72,6 @@ export default function Login() {
 
   return (
     <div className="login-container">
-      {/* Theme Toggle Button */}
-      <button
-        className="login-theme-toggle"
-        onClick={toggleTheme}
-        aria-label={isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode'}
-        title={isDarkTheme ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-      >
-        <span className="theme-toggle-icon">{isDarkTheme ? '☀️' : '🌙'}</span>
-        <span className="theme-toggle-label">{isDarkTheme ? 'Light' : 'Dark'}</span>
-      </button>
 
       {/* Floating particles */}
       <div className="login-particles">

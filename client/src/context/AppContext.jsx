@@ -10,20 +10,6 @@ export function AppProvider({ children }) {
   );
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Theme state
-  const [isDarkTheme, setIsDarkTheme] = useState(() => {
-    return localStorage.getItem('fv-theme') === 'dark';
-  });
-
-  // Apply theme to document
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', isDarkTheme ? 'dark' : 'light');
-    localStorage.setItem('fv-theme', isDarkTheme ? 'dark' : 'light');
-  }, [isDarkTheme]);
-
-  const toggleTheme = useCallback(() => {
-    setIsDarkTheme(prev => !prev);
-  }, []);
 
   // Authentication states
   const [user, setUser] = useState(null);
@@ -101,8 +87,7 @@ export function AppProvider({ children }) {
       refreshKey, triggerRefresh,
       goToPrevMonth, goToNextMonth,
       user, token, authLoading,
-      login, register, logout,
-      isDarkTheme, toggleTheme
+      login, register, logout
     }}>
       {children}
     </AppContext.Provider>
