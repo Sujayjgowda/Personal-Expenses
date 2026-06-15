@@ -9,18 +9,29 @@ import Expenses from './pages/Expenses';
 import Savings from './pages/Savings';
 import Bills from './pages/Bills';
 import Reports from './pages/Reports';
+import Login from './pages/Login';
 import './App.css';
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const { selectedMonth, refreshKey } = useApp();
+  const { selectedMonth, refreshKey, token, authLoading } = useApp();
   const [dashboardData, setDashboardData] = useState(null);
 
   useEffect(() => {
-    getDashboard(selectedMonth)
-      .then(setDashboardData)
-      .catch(console.error);
-  }, [selectedMonth, refreshKey]);
+    if (token) {
+      getDashboard(selectedMonth)
+        .then(setDashboardData)
+        .catch(console.error);
+    }
+  }, [selectedMonth, refreshKey, token]);
+
+  if (authLoading) {
+    return <div className="loading-spinner" />;
+  }
+
+  if (!token) {
+    return <Login />;
+  }
 
   const renderPage = () => {
     switch (activeTab) {

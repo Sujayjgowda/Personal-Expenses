@@ -10,8 +10,8 @@ router.get('/', async (req, res) => {
 
     const monthDate = `${month}-01`;
     const result = await pool.query(
-      'SELECT * FROM bills WHERE month = $1 AND is_archived = FALSE ORDER BY due_date ASC, created_at DESC',
-      [monthDate]
+      'SELECT * FROM bills WHERE user_id = $1 AND month = $2 AND is_archived = FALSE ORDER BY due_date ASC, created_at DESC',
+      [req.userId, monthDate]
     );
     res.json(result.rows);
   } catch (err) {
@@ -26,9 +26,9 @@ router.post('/', async (req, res) => {
     const { name, category, amount, due_date, month, notes } = req.body;
     const monthDate = `${month}-01`;
     const result = await pool.query(
-      `INSERT INTO bills (name, category, amount, due_date, month, notes)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [name, category, amount, due_date || null, monthDate, notes || null]
+      `INSERT INTO bills (user_id, name, category, amount, due_date, month, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [req.userId, name, category, amount, due_date || null, monthDate, notes || null]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -45,8 +45,8 @@ router.put('/:id', async (req, res) => {
     const monthDate = `${month}-01`;
     const result = await pool.query(
       `UPDATE bills SET name=$1, category=$2, amount=$3, due_date=$4,
-       month=$5, notes=$6, updated_at=NOW() WHERE id=$7 RETURNING *`,
-      [name, category, amount, due_date || null, monthDate, notes || null, id]
+       month=$5, notes=$6, updated_at=NOW() WHERE id=$7 AND user_id=$8 RETURNING *`,
+      [name, category, amount, due_date || null, monthDate, notes || null, id, req.userId]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     res.json(result.rows[0]);
@@ -61,8 +61,8 @@ router.patch('/:id/pay', async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
-      'UPDATE bills SET is_paid = TRUE, paid_date = NOW(), updated_at = NOW() WHERE id = $1 RETURNING *',
-      [id]
+      'UPDATE bills SET is_paid = TRUE, paid_date = NOW(), updated_at = NOW() WHERE id = $1 AND user_id = $2 RETURNING *',
+      [id, req.userId]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     res.json(result.rows[0]);
@@ -77,8 +77,8 @@ router.patch('/:id/archive', async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
-      'UPDATE bills SET is_archived = TRUE, updated_at = NOW() WHERE id = $1 RETURNING *',
-      [id]
+      'UPDATE bills SET is_archived = TRUE, updated_at = NOW() WHERE id = $1 AND user_id = $2 RETURNING *',
+      [id, req.userId]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     res.json(result.rows[0]);

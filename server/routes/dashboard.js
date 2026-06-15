@@ -12,66 +12,66 @@ router.get('/', async (req, res) => {
 
     // Total Income
     const incomeResult = await pool.query(
-      'SELECT COALESCE(SUM(amount), 0) as total FROM income WHERE month = $1 AND is_archived = FALSE',
-      [monthDate]
+      'SELECT COALESCE(SUM(amount), 0) as total FROM income WHERE user_id = $2 AND month = $1 AND is_archived = FALSE',
+      [monthDate, req.userId]
     );
 
     // Total Expenses (actual)
     const expenseResult = await pool.query(
-      'SELECT COALESCE(SUM(actual), 0) as total FROM expenses WHERE month = $1 AND is_archived = FALSE',
-      [monthDate]
+      'SELECT COALESCE(SUM(actual), 0) as total FROM expenses WHERE user_id = $2 AND month = $1 AND is_archived = FALSE',
+      [monthDate, req.userId]
     );
 
-    // Total Budgeted (carry forward from previous months if not set)
+    // Total Budgeted (carry forward from previous months if not set, filtered by user)
     const budgetResult = await pool.query(
       `SELECT COALESCE(SUM(carried.amount), 0) as total_budgeted
        FROM (
          SELECT DISTINCT ON (ec.id) COALESCE(cb.amount, 0) as amount
          FROM expense_categories ec
-         LEFT JOIN category_budgets cb ON cb.category_id = ec.id AND cb.month <= $1
+         LEFT JOIN category_budgets cb ON cb.category_id = ec.id AND cb.month <= $1 AND cb.user_id = $2
          ORDER BY ec.id, cb.month DESC NULLS LAST
        ) carried
        WHERE carried.amount > 0`,
-      [monthDate]
+      [monthDate, req.userId]
     );
 
-    // Expense breakdown by category (joined with category budgets)
+    // Expense breakdown by category (joined with category budgets, filtered by user)
     const categoryResult = await pool.query(
       `SELECT ec.name, ec.icon,
               COALESCE(SUM(e.actual), 0) as total,
               COALESCE(carried_budget.amount, 0) as budgeted
        FROM expense_categories ec
-       LEFT JOIN expenses e ON ec.id = e.category_id AND e.month = $1 AND e.is_archived = FALSE
+       LEFT JOIN expenses e ON ec.id = e.category_id AND e.month = $1 AND e.is_archived = FALSE AND e.user_id = $2
        LEFT JOIN (
          SELECT DISTINCT ON (category_id) category_id, amount
          FROM category_budgets
-         WHERE month <= $1
+         WHERE month <= $1 AND user_id = $2
          ORDER BY category_id, month DESC
        ) carried_budget ON ec.id = carried_budget.category_id
        GROUP BY ec.id, ec.name, ec.icon, carried_budget.amount
        ORDER BY total DESC`,
-      [monthDate]
+      [monthDate, req.userId]
     );
 
     // Check if there are any uncategorized expenses (due to deleted category)
     const uncategorizedResult = await pool.query(
-      'SELECT COALESCE(SUM(actual), 0) as total FROM expenses WHERE month = $1 AND category_id IS NULL AND is_archived = FALSE',
-      [monthDate]
+      'SELECT COALESCE(SUM(actual), 0) as total FROM expenses WHERE user_id = $2 AND month = $1 AND category_id IS NULL AND is_archived = FALSE',
+      [monthDate, req.userId]
     );
     const uncategorizedTotal = parseFloat(uncategorizedResult.rows[0].total);
 
     // Total Savings
     const savingsResult = await pool.query(
-      'SELECT COALESCE(SUM(amount), 0) as total FROM savings WHERE month = $1 AND is_archived = FALSE',
-      [monthDate]
+      'SELECT COALESCE(SUM(amount), 0) as total FROM savings WHERE user_id = $2 AND month = $1 AND is_archived = FALSE',
+      [monthDate, req.userId]
     );
 
     // Savings by type
     const savingsTypeResult = await pool.query(
       `SELECT type, COALESCE(SUM(amount), 0) as total
-       FROM savings WHERE month = $1 AND is_archived = FALSE
+       FROM savings WHERE user_id = $2 AND month = $1 AND is_archived = FALSE
        GROUP BY type ORDER BY total DESC`,
-      [monthDate]
+      [monthDate, req.userId]
     );
 
     // Total Bills
@@ -79,8 +79,8 @@ router.get('/', async (req, res) => {
       `SELECT COALESCE(SUM(amount), 0) as total,
               COALESCE(SUM(CASE WHEN is_paid THEN amount ELSE 0 END), 0) as total_paid,
               COALESCE(SUM(CASE WHEN NOT is_paid THEN amount ELSE 0 END), 0) as total_unpaid
-       FROM bills WHERE month = $1 AND is_archived = FALSE`,
-      [monthDate]
+       FROM bills WHERE user_id = $2 AND month = $1 AND is_archived = FALSE`,
+      [monthDate, req.userId]
     );
 
     const totalIncome = parseFloat(incomeResult.rows[0].total);

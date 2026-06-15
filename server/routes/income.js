@@ -10,8 +10,8 @@ router.get('/', async (req, res) => {
 
     const monthDate = `${month}-01`;
     const result = await pool.query(
-      'SELECT * FROM income WHERE month = $1 AND is_archived = FALSE ORDER BY created_at DESC',
-      [monthDate]
+      'SELECT * FROM income WHERE user_id = $1 AND month = $2 AND is_archived = FALSE ORDER BY created_at DESC',
+      [req.userId, monthDate]
     );
     res.json(result.rows);
   } catch (err) {
@@ -26,8 +26,8 @@ router.post('/', async (req, res) => {
     const { source, amount, month, notes } = req.body;
     const monthDate = `${month}-01`;
     const result = await pool.query(
-      'INSERT INTO income (source, amount, month, notes) VALUES ($1, $2, $3, $4) RETURNING *',
-      [source, amount, monthDate, notes || null]
+      'INSERT INTO income (user_id, source, amount, month, notes) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [req.userId, source, amount, monthDate, notes || null]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -43,8 +43,8 @@ router.put('/:id', async (req, res) => {
     const { source, amount, month, notes } = req.body;
     const monthDate = `${month}-01`;
     const result = await pool.query(
-      'UPDATE income SET source=$1, amount=$2, month=$3, notes=$4, updated_at=NOW() WHERE id=$5 RETURNING *',
-      [source, amount, monthDate, notes || null, id]
+      'UPDATE income SET source=$1, amount=$2, month=$3, notes=$4, updated_at=NOW() WHERE id=$5 AND user_id=$6 RETURNING *',
+      [source, amount, monthDate, notes || null, id, req.userId]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     res.json(result.rows[0]);
@@ -59,8 +59,8 @@ router.patch('/:id/archive', async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
-      'UPDATE income SET is_archived = TRUE, updated_at = NOW() WHERE id = $1 RETURNING *',
-      [id]
+      'UPDATE income SET is_archived = TRUE, updated_at = NOW() WHERE id = $1 AND user_id = $2 RETURNING *',
+      [id, req.userId]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     res.json(result.rows[0]);

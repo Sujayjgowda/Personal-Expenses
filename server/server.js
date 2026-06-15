@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
+const authRoutes = require('./routes/auth');
+const authMiddleware = require('./middleware/authMiddleware');
 const incomeRoutes = require('./routes/income');
 const expensesRoutes = require('./routes/expenses');
 const savingsRoutes = require('./routes/savings');
@@ -20,14 +22,17 @@ app.use(cors({
 app.use(express.json());
 
 // Routes
-app.use('/api/income', incomeRoutes);
-app.use('/api/expenses', expensesRoutes);
-app.use('/api/savings', savingsRoutes);
-app.use('/api/bills', billsRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/reports', reportsRoutes);
+app.use('/api/auth', authRoutes); // Auth routes (public)
 
-// Health check
+// Protected routes (require authMiddleware)
+app.use('/api/income', authMiddleware, incomeRoutes);
+app.use('/api/expenses', authMiddleware, expensesRoutes);
+app.use('/api/savings', authMiddleware, savingsRoutes);
+app.use('/api/bills', authMiddleware, billsRoutes);
+app.use('/api/dashboard', authMiddleware, dashboardRoutes);
+app.use('/api/reports', authMiddleware, reportsRoutes);
+
+// Health check (public)
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });

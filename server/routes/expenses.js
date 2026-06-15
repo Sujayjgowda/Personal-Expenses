@@ -13,7 +13,7 @@ router.get('/categories', async (req, res) => {
   }
 });
 
-// GET all expenses for a month
+// GET all expenses for a month (filtered by user)
 router.get('/', async (req, res) => {
   try {
     const { month } = req.query;
@@ -24,9 +24,9 @@ router.get('/', async (req, res) => {
       `SELECT e.*, ec.name as category_name, ec.icon as category_icon
        FROM expenses e
        LEFT JOIN expense_categories ec ON e.category_id = ec.id
-       WHERE e.month = $1 AND e.is_archived = FALSE
+       WHERE e.user_id = $1 AND e.month = $2 AND e.is_archived = FALSE
        ORDER BY e.created_at DESC`,
-      [monthDate]
+      [req.userId, monthDate]
     );
     res.json(result.rows);
   } catch (err) {
@@ -35,15 +35,15 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST new expense
+// POST new expense (associated with user)
 router.post('/', async (req, res) => {
   try {
     const { category_id, description, budgeted, actual, month, notes } = req.body;
     const monthDate = `${month}-01`;
     const result = await pool.query(
-      `INSERT INTO expenses (category_id, description, budgeted, actual, month, notes)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [category_id, description, budgeted || 0, actual || 0, monthDate, notes || null]
+      `INSERT INTO expenses (user_id, category_id, description, budgeted, actual, month, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [req.userId, category_id, description, budgeted || 0, actual || 0, monthDate, notes || null]
     );
 
     // Fetch with category info
@@ -51,8 +51,8 @@ router.post('/', async (req, res) => {
       `SELECT e.*, ec.name as category_name, ec.icon as category_icon
        FROM expenses e
        LEFT JOIN expense_categories ec ON e.category_id = ec.id
-       WHERE e.id = $1`,
-      [result.rows[0].id]
+       WHERE e.id = $1 AND e.user_id = $2`,
+      [result.rows[0].id, req.userId]
     );
     res.status(201).json(full.rows[0]);
   } catch (err) {
@@ -69,8 +69,8 @@ router.put('/:id', async (req, res) => {
     const monthDate = `${month}-01`;
     const result = await pool.query(
       `UPDATE expenses SET category_id=$1, description=$2, budgeted=$3, actual=$4,
-       month=$5, notes=$6, updated_at=NOW() WHERE id=$7 RETURNING *`,
-      [category_id, description, budgeted || 0, actual || 0, monthDate, notes || null, id]
+       month=$5, notes=$6, updated_at=NOW() WHERE id=$7 AND user_id=$8 RETURNING *`,
+      [category_id, description, budgeted || 0, actual || 0, monthDate, notes || null, id, req.userId]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
 
@@ -78,8 +78,8 @@ router.put('/:id', async (req, res) => {
       `SELECT e.*, ec.name as category_name, ec.icon as category_icon
        FROM expenses e
        LEFT JOIN expense_categories ec ON e.category_id = ec.id
-       WHERE e.id = $1`,
-      [id]
+       WHERE e.id = $1 AND e.user_id = $2`,
+      [id, req.userId]
     );
     res.json(full.rows[0]);
   } catch (err) {
@@ -93,8 +93,8 @@ router.patch('/:id/archive', async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
-      'UPDATE expenses SET is_archived = TRUE, updated_at = NOW() WHERE id = $1 RETURNING *',
-      [id]
+      'UPDATE expenses SET is_archived = TRUE, updated_at = NOW() WHERE id = $1 AND user_id = $2 RETURNING *',
+      [id, req.userId]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     res.json(result.rows[0]);
@@ -104,7 +104,7 @@ router.patch('/:id/archive', async (req, res) => {
   }
 });
 
-// POST new expense category (dynamic custom categories)
+// POST new expense category (dynamic custom categories - global)
 router.post('/categories', async (req, res) => {
   try {
     const { name, icon } = req.body;
@@ -120,7 +120,7 @@ router.post('/categories', async (req, res) => {
   }
 });
 
-// DELETE expense category (dynamic delete)
+// DELETE expense category (dynamic delete - global)
 router.delete('/categories/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -136,7 +136,7 @@ router.delete('/categories/:id', async (req, res) => {
   }
 });
 
-// PUT reorder categories
+// PUT reorder categories (global)
 router.put('/categories/reorder', async (req, res) => {
   try {
     const { orderedIds } = req.body;
@@ -168,14 +168,14 @@ router.put('/categories/reorder', async (req, res) => {
   }
 });
 
-// GET all category budgets for a month (carry forward from previous months)
+// GET all category budgets for a month (carry forward from previous months, filtered by user)
 router.get('/budgets', async (req, res) => {
   try {
     const { month } = req.query;
     if (!month) return res.status(400).json({ error: 'month query param required (YYYY-MM)' });
     const monthDate = `${month}-01`;
 
-    // For each category, get the budget for this month,
+    // For each category, get the budget for this month for this user,
     // or fall back to the most recent previous month's budget.
     const result = await pool.query(
       `SELECT DISTINCT ON (ec.id)
@@ -185,9 +185,9 @@ router.get('/budgets', async (req, res) => {
          COALESCE(cb.month, $1::date) as month,
          cb.month IS NOT NULL AND cb.month < $1::date as is_carried_forward
        FROM expense_categories ec
-       LEFT JOIN category_budgets cb ON cb.category_id = ec.id AND cb.month <= $1
+       LEFT JOIN category_budgets cb ON cb.category_id = ec.id AND cb.month <= $1 AND cb.user_id = $2
        ORDER BY ec.id, cb.month DESC NULLS LAST`,
-      [monthDate]
+      [monthDate, req.userId]
     );
     // Filter out rows where no budget was ever set (cb.id is null)
     const rows = result.rows.map(r => ({
@@ -202,19 +202,19 @@ router.get('/budgets', async (req, res) => {
   }
 });
 
-// POST set/update category budget (upsert)
+// POST set/update category budget (upsert, associated with user)
 router.post('/budgets', async (req, res) => {
   try {
     const { category_id, amount, month } = req.body;
     if (!category_id || !month) return res.status(400).json({ error: 'category_id and month are required' });
     const monthDate = `${month}-01`;
     const result = await pool.query(
-      `INSERT INTO category_budgets (category_id, amount, month, updated_at)
-       VALUES ($1, $2, $3, NOW())
-       ON CONFLICT (category_id, month)
+      `INSERT INTO category_budgets (user_id, category_id, amount, month, updated_at)
+       VALUES ($1, $2, $3, $4, NOW())
+       ON CONFLICT (user_id, category_id, month)
        DO UPDATE SET amount = EXCLUDED.amount, updated_at = NOW()
        RETURNING *`,
-      [category_id, amount || 0, monthDate]
+      [req.userId, category_id, amount || 0, monthDate]
     );
     res.json(result.rows[0]);
   } catch (err) {

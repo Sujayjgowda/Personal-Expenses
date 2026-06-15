@@ -1,16 +1,35 @@
-const API_BASE = 'http://localhost:5001/api';
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5001/api'
+  : '/api';
 
 async function request(url, options = {}) {
+  const token = localStorage.getItem('token');
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${API_BASE}${url}`, {
-    headers: { 'Content-Type': 'application/json' },
     ...options,
+    headers,
   });
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Request failed' }));
     throw new Error(error.error || 'Request failed');
   }
+  
   return response.json();
 }
+
+// Authentication
+export const loginUser = (data) => request('/auth/login', { method: 'POST', body: JSON.stringify(data) });
+export const registerUser = (data) => request('/auth/register', { method: 'POST', body: JSON.stringify(data) });
+export const verifyUser = () => request('/auth/me');
 
 // Income
 export const getIncome = (month) => request(`/income?month=${month}`);

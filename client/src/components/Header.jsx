@@ -7,7 +7,7 @@ const MONTH_NAMES = [
 ];
 
 export default function Header({ dashboardData }) {
-  const { selectedMonth, goToPrevMonth, goToNextMonth, setSelectedMonth } = useApp();
+  const { selectedMonth, goToPrevMonth, goToNextMonth, setSelectedMonth, user, logout } = useApp();
   const [year, month] = selectedMonth.split('-').map(Number);
   const monthName = MONTH_NAMES[month - 1];
 
@@ -24,19 +24,33 @@ export default function Header({ dashboardData }) {
       <div className="header-top">
         <div className="header-brand">
           <span className="brand-icon">💰</span>
-          <h1 className="brand-title">ExpenseFlow</h1>
+          <h1 className="brand-title">Finance Vault</h1>
         </div>
-        <div className="month-nav">
-          <button className="btn btn-icon btn-secondary month-btn" onClick={goToPrevMonth} aria-label="Previous month">
-            ←
-          </button>
-          <div className="month-display">
-            <span className="month-name">{monthName}</span>
-            <span className="month-year">{year}</span>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', flexWrap: 'wrap' }}>
+          <div className="month-nav">
+            <button className="btn btn-icon btn-secondary month-btn" onClick={goToPrevMonth} aria-label="Previous month">
+              ←
+            </button>
+            <div className="month-display">
+              <span className="month-name">{monthName}</span>
+              <span className="month-year">{year}</span>
+            </div>
+            <button className="btn btn-icon btn-secondary month-btn" onClick={goToNextMonth} aria-label="Next month">
+              →
+            </button>
           </div>
-          <button className="btn btn-icon btn-secondary month-btn" onClick={goToNextMonth} aria-label="Next month">
-            →
-          </button>
+
+          {user && (
+            <div className="header-profile" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', paddingLeft: 'var(--space-md)', borderLeft: '1px solid var(--glass-border)' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }} title={user.email}>
+                👤 {user.username}
+              </span>
+              <button className="btn btn-sm btn-secondary" onClick={logout} style={{ height: '32px', display: 'flex', alignItems: 'center', padding: '0 12px', fontSize: '0.8rem', borderRadius: 'var(--radius-sm)' }}>
+                Logout
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
