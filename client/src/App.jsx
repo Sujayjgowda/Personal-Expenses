@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { getDashboard } from './services/api';
 import Header from './components/Header';
-import TabNav from './components/TabNav';
+import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Income from './pages/Income';
 import Expenses from './pages/Expenses';
@@ -14,6 +14,7 @@ import './App.css';
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { selectedMonth, refreshKey, token, authLoading } = useApp();
   const [dashboardData, setDashboardData] = useState(null);
 
@@ -46,12 +47,19 @@ function AppContent() {
   };
 
   return (
-    <div className="app">
-      <Header dashboardData={dashboardData} />
-      <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
-      <main className="app-main">
-        {renderPage()}
-      </main>
+    <div className={`app ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
+      <Sidebar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        collapsed={sidebarCollapsed}
+        onCollapse={setSidebarCollapsed}
+      />
+      <div className="app-body">
+        <Header dashboardData={dashboardData} />
+        <main className="app-main">
+          {renderPage()}
+        </main>
+      </div>
     </div>
   );
 }
