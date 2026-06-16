@@ -455,7 +455,8 @@
 /* ========== RESPONSIVENESS ========== */
 @media (max-width: 768px) {
   .login-card {
-    width: 420px;
+    width: 100%;
+    max-width: 420px;
     height: auto;
     min-height: 480px;
     flex-direction: column;
@@ -468,13 +469,21 @@
     min-height: 450px;
   }
 
+  .login-card.signup-active .forms-container {
+    transform: none;
+  }
+
   .form {
     padding: var(--space-xl) var(--space-lg);
-    position: relative;
+    position: relative !important;
     transform: none !important;
     opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
     display: none;
     z-index: 1;
+    width: 100% !important;
+    height: auto !important;
   }
 
   /* Show current form and hide the other in mobile */

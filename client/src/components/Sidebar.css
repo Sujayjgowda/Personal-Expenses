@@ -435,6 +435,7 @@
 
   .sidebar-mobile-trigger {
     display: flex;
+    position: absolute;
   }
 
   .sidebar-mobile-close {
