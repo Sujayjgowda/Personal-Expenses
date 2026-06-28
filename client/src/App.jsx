@@ -19,6 +19,38 @@ function AppContent() {
   const [dashboardData, setDashboardData] = useState(null);
 
   useEffect(() => {
+    const getLayoutCategory = (width) => {
+      if (width <= 768) return 'mobile';
+      if (width <= 1024) return 'tablet';
+      return 'desktop';
+    };
+
+    let prevCategory = getLayoutCategory(window.innerWidth);
+
+    // Initial state setup based on current width
+    if (prevCategory === 'tablet') {
+      setSidebarCollapsed(true);
+    } else if (prevCategory === 'desktop') {
+      setSidebarCollapsed(false);
+    }
+
+    const handleResize = () => {
+      const currentCategory = getLayoutCategory(window.innerWidth);
+      if (currentCategory !== prevCategory) {
+        if (currentCategory === 'tablet') {
+          setSidebarCollapsed(true);
+        } else if (currentCategory === 'desktop') {
+          setSidebarCollapsed(false);
+        }
+        prevCategory = currentCategory;
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
     if (token) {
       getDashboard(selectedMonth)
         .then(setDashboardData)

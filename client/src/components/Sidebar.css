@@ -1,10 +1,10 @@
 /* ========== FLOATING GLASS SIDEBAR ========== */
 .sidebar {
   position: fixed;
-  top: 24px;
-  left: 24px;
-  bottom: 24px;
-  width: 260px;
+  top: var(--sidebar-offset);
+  left: var(--sidebar-offset);
+  bottom: var(--sidebar-offset);
+  width: var(--sidebar-width);
   display: flex;
   flex-direction: column;
   background: rgba(255, 255, 255, 0.55);
